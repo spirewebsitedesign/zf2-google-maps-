@@ -24,18 +24,15 @@ class GoogleMap {
     var $zoom = 10;
     var $lat = -300;
     var $lon = 300;
-    var $markers = array();
+    var $markers;
     var $height = "100px";
     var $width = "100px";
     var $animation = '';
     var $icon = '';
-    var $icons = array();
 
-    /**
-     * Constructor
-     */
-    function __construct($api_key) {
+    public function __construct($api_key = "") {
         $this->api_key = $api_key;
+        $this->markers = array();
     }
 
     // --------------------------------------------------------------------
@@ -71,10 +68,16 @@ class GoogleMap {
 
         $out .= '	<div id="' . $this->div_id . '" class="' . $this->div_class . '" style="height:' . $this->height . ';width:' . $this->width . ';"></div>';
 
-        $out .= '	<script type="text/javascript" src="//maps.googleapis.com/maps/api/js?key=' . $this->api_key . '&sensor=' . $this->sensor . '"></script>';
+        $out .= '	<script type="text/javascript" src="//maps.googleapis.com/maps/api/js';
+
+        if($this->api_key) $out.= '?key=' . $this->api_key . '&sensor=' . $this->sensor . '"></script>';
+
+        else $out.= '?sensor=' . $this->sensor . '"></script>';
 
         $out .= '	<script type="text/javascript"> 
-    	
+
+    	                var infoWindow =  new google.maps.InfoWindow({size: new google.maps.Size(150,50)});
+
 						function doAnimation() 
 						{
 							if (marker.getAnimation() != null) 
@@ -100,21 +103,22 @@ class GoogleMap {
         $out .= '			var map = new google.maps.Map(document.getElementById("' . $this->div_id . '"), myOptions);';
 
         $i = 0;
-        foreach ($this->markers as $key => $value) {
+        foreach ($this->markers as $marker) {
             $out .="var marker" . $i . " = new google.maps.Marker({
-									 												position: new google.maps.LatLng(" . $value . "), 
-									 												map: map,";
+                                                position: new google.maps.LatLng(" . $marker->getLatLng() . "),
+                                                map: map,";
             if ($this->animation != '') {
                 $out .="animation: google.maps.Animation." . $this->animation . ",";
             }
-            if ($this->icon != '') {
-                $out .="icon:'" . $this->icon . "',";
-            } elseif (count($this->icons) > 0) {
-                $out .="icon:'" . $this->icons[$i] . "',";
+            if ($marker->getIcon() != '') {
+                $out .="icon:'" . $marker->getIcon() . "',";
             }
-            $out .="title:'" . $key . "'});";
-            if ($this->animation != '') {
-                $out .="google.maps.event.addListener(marker" . $i . ", 'click', doAnimation);";
+            $out .="title:'" . $marker->getTitle() . "'});";
+            if ($marker->getInfoWindow()) {
+                $out .="google.maps.event.addListener(marker" . $i . ", 'click',  function() {
+	                        infoWindow.setContent('". $marker->getInfoWindow() . "');
+	                        infoWindow.open(map,marker" . $i . ");
+                        });";
             }
 
             $i++;
